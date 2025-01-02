@@ -8,14 +8,11 @@ Este proyecto configura automáticamente pfSense utilizando Ansible para gestion
 ## **Estructura**
 
 ```plaintext
-[victory@physical1 pfSense-ansible]$ tree
-.
 ├── inventory
-│   └── inventory.ini
+│   └── inventory.ini
 ├── playbooks
-│   ├── pfsense_config.yml
-│   └── vars.yml
-└── README.mdconfig.yml
+│   ├── pfsense_config.yml
+│   └── vars.yml
 └── README.md
 ```
 
@@ -35,7 +32,7 @@ Modifica el archivo inventory/hosts con las credenciales de pfSense.
 Ejecuta el playbook:
 
 ```bash
-ansible-playbook -i inventory/hosts playbooks/pfsense_config.yml
+ansible-playbook -i inventory/inventory.ini playbooks/pfsense_config.yml
 ```
 
 Verifica las configuraciones:
