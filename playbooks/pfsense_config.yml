@@ -6,6 +6,19 @@
   vars_files:
     - vars.yml
   tasks:
+    # Verificar conectividad con la API
+    - name: Verificar conectividad con la API de pfSense
+      uri:
+        url: "{{ api_url }}/system/status"
+        method: GET
+        headers:
+          X-API-Key: "{{ api_key }}"
+        status_code: 200
+      register: api_status
+
+    - debug:
+        var: api_status
+
     # Configuración de interfaces
     - name: Configurar interfaz WAN
       pfsensible.core.pfsense_interface:
@@ -82,4 +95,4 @@
       pfsensible.core.pfsense_backup:
         url: "{{ api_url }}"
         api_key: "{{ api_key }}"
-        target: "/backups/pfsense_config.xml"
+        target: "/tmp/pfsense_config_{{ ansible_date_time.date }}.xml"
