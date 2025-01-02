@@ -1,0 +1,85 @@
+- name: Configuración completa de pfSense
+  hosts: pfsense
+  become: false
+  collections:
+    - pfsensible.core
+  vars_files:
+    - vars.yml
+  tasks:
+    # Configuración de interfaces
+    - name: Configurar interfaz WAN
+      pfsensible.core.pfsense_interface:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        name: vtnet0
+        ipaddr: 192.168.0.200
+        subnet: 24
+        gateway: 192.168.0.1
+        descr: "WAN Interface"
+
+    - name: Configurar interfaz LAN
+      pfsensible.core.pfsense_interface:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        name: vtnet1
+        ipaddr: 192.168.1.1
+        subnet: 24
+        descr: "LAN Interface"
+
+    - name: Configurar interfaz DMZ
+      pfsensible.core.pfsense_interface:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        name: vtnet2
+        ipaddr: 192.168.2.1
+        subnet: 24
+        descr: "DMZ Interface"
+
+    # Reglas de firewall
+    - name: Configurar regla de firewall para LAN
+      pfsensible.core.pfsense_rule:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        interface: lan
+        action: pass
+        protocol: any
+        source: 192.168.1.0/24
+        destination: any
+        descr: "Allow traffic from LAN"
+
+    - name: Configurar regla de firewall para DMZ
+      pfsensible.core.pfsense_rule:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        interface: dmz
+        action: pass
+        protocol: tcp
+        source: 192.168.2.0/24
+        destination: any
+        descr: "Allow traffic from DMZ"
+
+    - name: Configurar regla de firewall para permitir tráfico VPN
+      pfsensible.core.pfsense_rule:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        interface: wan
+        action: pass
+        protocol: udp
+        source: any
+        destination: 192.168.0.200
+        destination_port: 51820
+        descr: "Allow WireGuard VPN traffic"
+
+    # Aplicar cambios
+    - name: Aplicar cambios en pfSense
+      pfsensible.core.pfsense_apply:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        command: filter
+
+    # Backup de configuración
+    - name: Realizar backup de la configuración actual
+      pfsensible.core.pfsense_backup:
+        url: "{{ api_url }}"
+        api_key: "{{ api_key }}"
+        target: "/backups/pfsense_config.xml"
