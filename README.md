@@ -1,59 +1,25 @@
-README.md
-markdown
-Copy code
-# Proyecto de Configuración de pfSense con Ansible
+# Proyecto Ansible para Configuración de pfSense
 
-Este proyecto configura automáticamente pfSense utilizando Ansible para gestionar las interfaces WAN, LAN, y DMZ, así como DHCP y reglas de firewall.
+Este proyecto utiliza Ansible para configurar un firewall pfSense mediante su API REST.
 
-## **Estructura**
+## Estructura
 
-```plaintext
-├── inventory
-│   └── inventory.ini
-├── playbooks
-│   ├── pfsense_config.yml
-│   └── vars.yml
-└── README.md
-```
+- `inventory/`: Contiene el archivo de inventario con la información del host.
+- `playbooks/`: Contiene los playbooks y archivos de variables.
+- `README.md`: Instrucciones para usar el proyecto.
 
-Requisitos
-Acceso SSH habilitado en pfSense.
-Máquina de control con Ansible instalado.
-Acceso administrativo al servidor físico y pfSense.
-Instrucciones
-Clona el repositorio:
+## Requisitos
 
-```bash
-git clone https://github.com/tu-repo/pfSense-ansible.git
-cd pfSense-ansible
-```
-Modifica el archivo inventory/hosts con las credenciales de pfSense.
+1. Ansible instalado en tu sistema.
+2. Acceso al API REST de pfSense habilitado.
+3. Clave de API válida configurada en `vars.yml`.
 
-Ejecuta el playbook:
+## Uso
 
-```bash
-ansible-playbook -i inventory/inventory.ini playbooks/pfsense_config.yml
-```
+1. Edita el archivo `inventory/inventory.ini` con la IP de tu dispositivo pfSense.
+2. Edita el archivo `playbooks/vars.yml` con tu clave API y URL.
+3. Ejecuta el playbook:
 
-Verifica las configuraciones:
-
-
-Interfaz WAN: 192.168.0.200
-Interfaz LAN: 192.168.1.1
-DMZ: 192.168.2.1
-Notas
-
-Asegúrate de que pfSsh.php esté disponible en tu instalación de pfSense.
-Puedes personalizar el playbook según las necesidades específicas de tu red.
-Autor
-Proyecto desarrollado por [Tu Nombre].
-
-
----
-
-Con esta estructura, tendrás un proyecto bien organizado que facilita la implementación de tu infraestructura en pfSense mediante Ansible.
-
-
-
-
-
+   ```bash
+   ansible-playbook -i inventory/inventory.ini playbooks/pfsense_config.yml
+   ```
