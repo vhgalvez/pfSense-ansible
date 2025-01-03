@@ -85,14 +85,22 @@
 
     # Aplicar cambios
     - name: Aplicar cambios en pfSense
-      pfsensible.core.pfsense_apply:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        command: filter
+      uri:
+        url: "{{ api_url }}/firewall/apply"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        status_code: 200
 
     # Backup de configuración
     - name: Realizar backup de la configuración actual
-      pfsensible.core.pfsense_backup:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        target: "/tmp/pfsense_config_{{ ansible_date_time.date }}.xml"
+      uri:
+        url: "{{ api_url }}/system/backup"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        body_format: json
+        body:
+          action: backup
+        status_code: 200
+        dest: "/tmp/pfsense_config_{{ ansible_date_time.date }}.xml"
