@@ -1,8 +1,6 @@
 - name: Configuración completa de pfSense
   hosts: pfsense
-  become: false
-  collections:
-    - pfsensible.core
+  gather_facts: false
   vars_files:
     - vars.yml
   tasks:
@@ -13,75 +11,113 @@
         method: GET
         headers:
           X-API-Key: "{{ api_key }}"
+        validate_certs: false
         status_code: 200
       register: api_status
 
-    - debug:
+    - name: Mostrar estado de conectividad con la API
+      debug:
         var: api_status
 
     # Configuración de interfaces
     - name: Configurar interfaz WAN
-      pfsensible.core.pfsense_interface:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        name: vtnet0
-        ipaddr: 192.168.0.200
-        subnet: 24
-        gateway: 192.168.0.1
-        descr: "WAN Interface"
+      uri:
+        url: "{{ api_url }}/interfaces"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        body_format: json
+        body:
+          name: vtnet0
+          ipaddr: 192.168.0.200
+          subnet: 24
+          gateway: 192.168.0.1
+          descr: "WAN Interface"
+        validate_certs: false
+        status_code: 200
 
     - name: Configurar interfaz LAN
-      pfsensible.core.pfsense_interface:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        name: vtnet1
-        ipaddr: 192.168.1.1
-        subnet: 24
-        descr: "LAN Interface"
+      uri:
+        url: "{{ api_url }}/interfaces"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        body_format: json
+        body:
+          name: vtnet1
+          ipaddr: 192.168.1.1
+          subnet: 24
+          descr: "LAN Interface"
+        validate_certs: false
+        status_code: 200
 
     - name: Configurar interfaz DMZ
-      pfsensible.core.pfsense_interface:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        name: vtnet2
-        ipaddr: 192.168.2.1
-        subnet: 24
-        descr: "DMZ Interface"
+      uri:
+        url: "{{ api_url }}/interfaces"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        body_format: json
+        body:
+          name: vtnet2
+          ipaddr: 192.168.2.1
+          subnet: 24
+          descr: "DMZ Interface"
+        validate_certs: false
+        status_code: 200
 
     # Reglas de firewall
     - name: Configurar regla de firewall para LAN
-      pfsensible.core.pfsense_rule:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        interface: lan
-        action: pass
-        protocol: any
-        source: 192.168.1.0/24
-        destination: any
-        descr: "Allow traffic from LAN"
+      uri:
+        url: "{{ api_url }}/firewall/rules"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        body_format: json
+        body:
+          interface: lan
+          action: pass
+          protocol: any
+          source: 192.168.1.0/24
+          destination: any
+          descr: "Allow traffic from LAN"
+        validate_certs: false
+        status_code: 200
 
     - name: Configurar regla de firewall para DMZ
-      pfsensible.core.pfsense_rule:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        interface: dmz
-        action: pass
-        protocol: tcp
-        source: 192.168.2.0/24
-        destination: any
-        descr: "Allow traffic from DMZ"
+      uri:
+        url: "{{ api_url }}/firewall/rules"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        body_format: json
+        body:
+          interface: dmz
+          action: pass
+          protocol: tcp
+          source: 192.168.2.0/24
+          destination: any
+          descr: "Allow traffic from DMZ"
+        validate_certs: false
+        status_code: 200
 
     - name: Configurar regla de firewall para permitir tráfico VPN
-      pfsensible.core.pfsense_rule:
-        url: "{{ api_url }}"
-        api_key: "{{ api_key }}"
-        interface: wan
-        action: pass
-        protocol: udp
-        source: any
-        destination: 192.168.0.200
-        destination_port: 51820
-        descr: "Allow WireGuard VPN traffic"
+      uri:
+        url: "{{ api_url }}/firewall/rules"
+        method: POST
+        headers:
+          X-API-Key: "{{ api_key }}"
+        body_format: json
+        body:
+          interface: wan
+          action: pass
+          protocol: udp
+          source: any
+          destination: 192.168.0.200
+          destination_port: 51820
+          descr: "Allow WireGuard VPN traffic"
+        validate_certs: false
+        status_code: 200
 
     # Aplicar cambios
     - name: Aplicar cambios en pfSense
@@ -90,6 +126,7 @@
         method: POST
         headers:
           X-API-Key: "{{ api_key }}"
+        validate_certs: false
         status_code: 200
 
     # Backup de configuración
@@ -102,5 +139,11 @@
         body_format: json
         body:
           action: backup
+        validate_certs: false
         status_code: 200
+      register: backup_response
+
+    - name: Guardar archivo de backup localmente
+      copy:
+        content: "{{ backup_response.content }}"
         dest: "/tmp/pfsense_config_{{ ansible_date_time.date }}.xml"
