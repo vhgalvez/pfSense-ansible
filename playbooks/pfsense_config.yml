@@ -1,20 +1,29 @@
-- name: Configuración completa de pfSense mediante SSH
+- name: Configuración completa de pfSense mediante SSH y Shell
   hosts: pfsense
   gather_facts: false
   tasks:
-    # Configurar la interfaz WAN
+    - name: Entrar al shell de pfSense y ejecutar comandos
+      ansible.builtin.expect:
+        command: ssh -i /home/victory/.ssh/id_rsa_key_cluster_openshift admin@192.168.0.200
+        responses:
+          "Enter an option: ": "8\n"
+        timeout: 30
+      register: shell_output
+
     - name: Configurar interfaz WAN
-      shell: |
+      ansible.builtin.shell: |
         pfSsh.php playback set_wan_ip vtnet0 192.168.0.200 24 192.168.0.1
+      args:
+        executable: /bin/sh
 
-    # Configurar la interfaz LAN
     - name: Configurar interfaz LAN
-      shell: |
+      ansible.builtin.shell: |
         pfSsh.php playback set_lan_ip vtnet1 192.168.1.1 24
+      args:
+        executable: /bin/sh
 
-    # Configurar la interfaz DMZ
     - name: Configurar interfaz DMZ
-      shell: |
+      ansible.builtin.shell: |
         echo '
         <interface>
           <name>vtnet2</name>
@@ -23,40 +32,44 @@
           <descr>DMZ Interface</descr>
         </interface>
         ' > /tmp/dmz_config.xml && pfctl -f /tmp/dmz_config.xml
+      args:
+        executable: /bin/sh
 
-    # Configurar regla de firewall para LAN
     - name: Configurar regla de firewall para LAN
-      shell: |
+      ansible.builtin.shell: |
         echo '
         pass in on vtnet1 from 192.168.1.0/24 to any keep state
         ' > /tmp/lan_rule.txt && pfctl -f /tmp/lan_rule.txt
+      args:
+        executable: /bin/sh
 
-    # Configurar regla de firewall para DMZ
     - name: Configurar regla de firewall para DMZ
-      shell: |
+      ansible.builtin.shell: |
         echo '
         pass in on vtnet2 proto tcp from 192.168.2.0/24 to any keep state
         ' > /tmp/dmz_rule.txt && pfctl -f /tmp/dmz_rule.txt
+      args:
+        executable: /bin/sh
 
-    # Configurar regla de firewall para permitir tráfico VPN
     - name: Configurar regla de firewall para permitir tráfico VPN
-      shell: |
+      ansible.builtin.shell: |
         echo '
         pass in on vtnet0 proto udp from any to 192.168.0.200 port 51820 keep state
         ' > /tmp/vpn_rule.txt && pfctl -f /tmp/vpn_rule.txt
+      args:
+        executable: /bin/sh
 
-    # Aplicar cambios
-    - name: Aplicar cambios en pfSense
-      shell: |
+    - name: Aplicar cambios
+      ansible.builtin.shell: |
         pfSsh.php playback apply
+      args:
+        executable: /bin/sh
 
-    # Realizar backup de configuración
-    - name: Realizar backup de la configuración actual
-      shell: |
+    - name: Realizar backup de configuración
+      ansible.builtin.shell: |
         cp /cf/conf/config.xml /tmp/pfsense_backup_{{ ansible_date_time.date }}.xml
       register: backup_file
 
-    # Descargar backup localmente
     - name: Guardar archivo de backup localmente
       fetch:
         src: "/tmp/pfsense_backup_{{ ansible_date_time.date }}.xml"
