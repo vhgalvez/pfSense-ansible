@@ -6,13 +6,11 @@
     - name: Configurar interfaz WAN
       shell: |
         pfSsh.php playback set_wan_ip vtnet0 192.168.0.200 24 192.168.0.1
-      become: yes
 
     # Configurar la interfaz LAN
     - name: Configurar interfaz LAN
       shell: |
         pfSsh.php playback set_lan_ip vtnet1 192.168.1.1 24
-      become: yes
 
     # Configurar la interfaz DMZ
     - name: Configurar interfaz DMZ
@@ -25,7 +23,6 @@
           <descr>DMZ Interface</descr>
         </interface>
         ' > /tmp/dmz_config.xml && pfctl -f /tmp/dmz_config.xml
-      become: yes
 
     # Configurar regla de firewall para LAN
     - name: Configurar regla de firewall para LAN
@@ -33,7 +30,6 @@
         echo '
         pass in on vtnet1 from 192.168.1.0/24 to any keep state
         ' > /tmp/lan_rule.txt && pfctl -f /tmp/lan_rule.txt
-      become: yes
 
     # Configurar regla de firewall para DMZ
     - name: Configurar regla de firewall para DMZ
@@ -41,7 +37,6 @@
         echo '
         pass in on vtnet2 proto tcp from 192.168.2.0/24 to any keep state
         ' > /tmp/dmz_rule.txt && pfctl -f /tmp/dmz_rule.txt
-      become: yes
 
     # Configurar regla de firewall para permitir tráfico VPN
     - name: Configurar regla de firewall para permitir tráfico VPN
@@ -49,19 +44,16 @@
         echo '
         pass in on vtnet0 proto udp from any to 192.168.0.200 port 51820 keep state
         ' > /tmp/vpn_rule.txt && pfctl -f /tmp/vpn_rule.txt
-      become: yes
 
     # Aplicar cambios
     - name: Aplicar cambios en pfSense
       shell: |
         pfSsh.php playback apply
-      become: yes
 
     # Realizar backup de configuración
     - name: Realizar backup de la configuración actual
       shell: |
         cp /cf/conf/config.xml /tmp/pfsense_backup_{{ ansible_date_time.date }}.xml
-      become: yes
       register: backup_file
 
     # Descargar backup localmente
