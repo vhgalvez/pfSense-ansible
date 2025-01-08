@@ -3,11 +3,8 @@
   gather_facts: false
   tasks:
     - name: Entrar al shell de pfSense y ejecutar comandos
-      ansible.builtin.expect:
-        command: ssh -i /home/victory/.ssh/id_rsa_key_cluster_openshift admin@192.168.0.200
-        responses:
-          "Enter an option: ": "8\n"
-        timeout: 60
+      ansible.builtin.command: |
+        echo "8" | ssh -i /home/victory/.ssh/id_rsa_key_cluster_openshift admin@192.168.0.200
       register: shell_output
 
     - name: Configurar interfaz WAN
