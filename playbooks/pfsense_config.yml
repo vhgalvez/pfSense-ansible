@@ -2,33 +2,23 @@
   hosts: pfsense
   gather_facts: false
   tasks:
-    - name: Entrar al shell de pfSense y ejecutar comandos
-      ansible.builtin.command: |
-        echo "8" | ssh -i /home/victory/.ssh/id_rsa_key_cluster_openshift admin@192.168.0.200
-      register: shell_output
-
-    - name: Configurar interfaz WAN
+    - name: Editar archivo de configuración para configurar interfaces
       ansible.builtin.shell: |
-        pfSsh.php playback set_wan_ip vtnet0 192.168.0.200 24 192.168.0.1
+        cp /cf/conf/config.xml /tmp/config_backup.xml
+        sed -i '' 's/<wan>/<wan><ipaddr>192.168.0.200<\/ipaddr><subnet>24<\/subnet><gateway>192.168.0.1<\/gateway><\/wan>/' /cf/conf/config.xml
+        sed -i '' 's/<lan>/<lan><ipaddr>192.168.1.1<\/ipaddr><subnet>24<\/subnet><\/lan>/' /cf/conf/config.xml
       args:
         executable: /bin/sh
 
-    - name: Configurar interfaz LAN
+    - name: Aplicar la nueva configuración
       ansible.builtin.shell: |
-        pfSsh.php playback set_lan_ip vtnet1 192.168.1.1 24
+        pfSsh.php playback apply
       args:
         executable: /bin/sh
 
-    - name: Configurar interfaz DMZ
+    - name: Reiniciar servicios
       ansible.builtin.shell: |
-        echo '
-        <interface>
-          <name>vtnet2</name>
-          <ipaddr>192.168.2.1</ipaddr>
-          <subnet>24</subnet>
-          <descr>DMZ Interface</descr>
-        </interface>
-        ' > /tmp/dmz_config.xml && pfctl -f /tmp/dmz_config.xml
+        pfctl -f /cf/conf/config.xml
       args:
         executable: /bin/sh
 
