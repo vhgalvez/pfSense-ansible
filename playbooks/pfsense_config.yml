@@ -2,63 +2,45 @@
   hosts: pfsense
   gather_facts: false
   tasks:
-    - name: Editar archivo de configuración para configurar interfaces
+    - name: Crear una copia de seguridad del archivo de configuración actual
       ansible.builtin.shell: |
-        cp /cf/conf/config.xml /tmp/config_backup.xml
-        sed -i '' 's/<wan>/<wan><ipaddr>192.168.0.200<\/ipaddr><subnet>24<\/subnet><gateway>192.168.0.1<\/gateway><\/wan>/' /cf/conf/config.xml
-        sed -i '' 's/<lan>/<lan><ipaddr>192.168.1.1<\/ipaddr><subnet>24<\/subnet><\/lan>/' /cf/conf/config.xml
+        cp /cf/conf/config.xml /tmp/config_backup_$(date +%F_%H-%M-%S).xml
       args:
         executable: /bin/sh
 
-    - name: Aplicar la nueva configuración
+    - name: Configurar interfaz WAN en el archivo de configuración
       ansible.builtin.shell: |
-        pfSsh.php playback apply
+        sed -i '' \
+        's#<wan>#<wan><ipaddr>192.168.0.200</ipaddr><subnet>24</subnet><gateway>192.168.0.1</gateway></wan>#' \
+        /cf/conf/config.xml
       args:
         executable: /bin/sh
 
-    - name: Reiniciar servicios
+    - name: Configurar interfaz LAN en el archivo de configuración
       ansible.builtin.shell: |
-        pfctl -f /cf/conf/config.xml
+        sed -i '' \
+        's#<lan>#<lan><ipaddr>192.168.1.1</ipaddr><subnet>24</subnet></lan>#' \
+        /cf/conf/config.xml
       args:
         executable: /bin/sh
 
-    - name: Configurar regla de firewall para LAN
-      ansible.builtin.shell: |
-        echo '
-        pass in on vtnet1 from 192.168.1.0/24 to any keep state
-        ' > /tmp/lan_rule.txt && pfctl -f /tmp/lan_rule.txt
+    - name: Validar cambios realizados en el archivo de configuración
+      ansible.builtin.shell: cat /cf/conf/config.xml | grep -E '<ipaddr>|<gateway>'
+      args:
+        executable: /bin/sh
+      register: config_validation
+
+    - name: Mostrar resultado de la validación de configuración
+      ansible.builtin.debug:
+        msg: "{{ config_validation.stdout }}"
+
+    - name: Aplicar la nueva configuración de pfSense
+      ansible.builtin.shell: pfctl -f /cf/conf/config.xml
       args:
         executable: /bin/sh
 
-    - name: Configurar regla de firewall para DMZ
-      ansible.builtin.shell: |
-        echo '
-        pass in on vtnet2 proto tcp from 192.168.2.0/24 to any keep state
-        ' > /tmp/dmz_rule.txt && pfctl -f /tmp/dmz_rule.txt
+    - name: Reiniciar el sistema para garantizar la aplicación de cambios
+      ansible.builtin.shell: reboot
       args:
         executable: /bin/sh
-
-    - name: Configurar regla de firewall para permitir tráfico VPN
-      ansible.builtin.shell: |
-        echo '
-        pass in on vtnet0 proto udp from any to 192.168.0.200 port 51820 keep state
-        ' > /tmp/vpn_rule.txt && pfctl -f /tmp/vpn_rule.txt
-      args:
-        executable: /bin/sh
-
-    - name: Aplicar cambios
-      ansible.builtin.shell: |
-        pfSsh.php playback apply
-      args:
-        executable: /bin/sh
-
-    - name: Realizar backup de configuración
-      ansible.builtin.shell: |
-        cp /cf/conf/config.xml /tmp/pfsense_backup_{{ ansible_date_time.date }}.xml
-      register: backup_file
-
-    - name: Guardar archivo de backup localmente
-      fetch:
-        src: "/tmp/pfsense_backup_{{ ansible_date_time.date }}.xml"
-        dest: "/tmp/"
-        flat: yes
+      ignore_errors: true
