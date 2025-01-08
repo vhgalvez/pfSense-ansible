@@ -7,7 +7,7 @@
         command: ssh -i /home/victory/.ssh/id_rsa_key_cluster_openshift admin@192.168.0.200
         responses:
           "Enter an option: ": "8\n"
-        timeout: 30
+        timeout: 60
       register: shell_output
 
     - name: Configurar interfaz WAN
