@@ -11,7 +11,7 @@
     - name: Configurar interfaz WAN en el archivo de configuración
       ansible.builtin.shell: |
         sed -i '' \
-        's#<wan>#<wan><ipaddr>192.168.0.200</ipaddr><subnet>24</subnet><gateway>192.168.0.1</gateway></wan>#' \
+        's#<wan>.*</wan>#<wan><ipaddr>192.168.0.200</ipaddr><subnet>24</subnet><gateway>192.168.0.1</gateway></wan>#' \
         /cf/conf/config.xml
       args:
         executable: /bin/sh
@@ -19,13 +19,14 @@
     - name: Configurar interfaz LAN en el archivo de configuración
       ansible.builtin.shell: |
         sed -i '' \
-        's#<lan>#<lan><ipaddr>192.168.1.1</ipaddr><subnet>24</subnet></lan>#' \
+        's#<lan>.*</lan>#<lan><ipaddr>192.168.1.1</ipaddr><subnet>24</subnet></lan>#' \
         /cf/conf/config.xml
       args:
         executable: /bin/sh
 
     - name: Validar cambios realizados en el archivo de configuración
-      ansible.builtin.shell: cat /cf/conf/config.xml | grep -E '<ipaddr>|<gateway>'
+      ansible.builtin.shell: |
+        cat /cf/conf/config.xml | grep -E '<ipaddr>|<gateway>'
       args:
         executable: /bin/sh
       register: config_validation
@@ -35,7 +36,8 @@
         msg: "{{ config_validation.stdout }}"
 
     - name: Aplicar la nueva configuración de pfSense
-      ansible.builtin.shell: pfctl -f /cf/conf/config.xml
+      ansible.builtin.shell: |
+        pfSsh.php playback config_reload
       args:
         executable: /bin/sh
 
